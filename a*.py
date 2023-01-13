@@ -1,49 +1,53 @@
-def right():
-    pos[0] += 1
-def down():
-    pos[1] += 1
-def jump(x, y):  # нет проверки неотрицательности x, y
-    global JUMPS_COUNT
-    pos[0], pos[1] = pos[0] + x, pos[1] + y
-    JUMPS_COUNT = 0
-
-
-# def search_for_closest(pos):
-#     col, row = pos
-#     return [(x, row) for x in range(col, WIDTH) if table[x][row]>0] +\
-#         [(col, y) for y in range(row, HEIGHT) if table[col][y]>0]  # нет обработки нулей
-def map_table(table):  # freaking A* algorithm
+def map_table(table):
     mapped_table = [[(None, 0) for j in range(WIDTH)] for i in range(HEIGHT)]  # 0 stands for "unmapped"
     mapped_table[0][0], mapped_table[-1][-1] = (-1, 1), (-1, 1)
-    # mapping negative numbers
     for i in range(WIDTH):
         for j in range(HEIGHT):
-            if mapped_table[i][j][1]: continue
-            if table[i][j] <= 0:
-                mapped_table[i][j] = (0, 1)
-    for j in range(HEIGHT-1, -1, -1):
-        for i in range(WIDTH-1, -1, -1):
-            if mapped_table[i][j][1]: continue
-            max_pos = find_max_pos((i, j))
+            if mapped_table[j][i][1]: continue
+            found_max = find_max((i, j), mapped_table)
+            mapped_table[j][i] = (table[j][i] if found_max[0] is None else table[j][i]+found_max[0], 1)
+    return mapped_table
 
-def find_max_pos(pos, mapped_table):
+
+def find_max(pos, mapped_table):
     col, row = pos  # all the "lower" cells expected to be already mapped
-    max_pos, max_num = (None, None), None
-    for j in range(col, HEIGHT):
-        for i in range(row, WIDTH):
-            if mapped_table[i][j][0] > 0 and mapped_table[i][j][0] > max_num:
-                max_num, max_pos = mapped_table[i][j][0], (i, j)
-                break
-    return max_pos
+    max_num, max_pos = None, (None, None)
+    if row == 0:
+        max_num, max_pos = mapped_table[row][col-1], (col-1, row)
+    elif col == 0:
+        max_num, max_pos = mapped_table[row-1][col], (col, row-1)
+    else:
+        if int(mapped_table[row][col-1], 2) > int(mapped_table[row-1][col], 2):
+            max_num, max_pos = mapped_table[row][col-1], (col-1, row)
+        else:
+            max_num, max_pos = mapped_table[row-1][col], (col, row-1)
+    return max_num, max_pos
 
 
-xlfile = open('/home/student/Загрузки/18-143.csv', 'rt', encoding='utf8')
-table = [list(map(int, line.split(',')[1:-1])) for line in xlfile if line][1:]
-WIDTH, HEIGHT = len(table[0]), len(table)
-JUMPS_COUNT = 0
-print(table)
 
-pos = (0, 0)
-summ = table[0][0] + table[-1][-1]
-for
+def main():
+    from pprint import pprint
+    global WIDTH, HEIGHT, JUMPS_COUNT
+    xlfile = open('/home/student/Загрузки/18-147.csv', 'rt', encoding='utf8')
+    table = [line.strip().split(',') for line in xlfile if line]
+    WIDTH, HEIGHT = len(table[0]), len(table)
+    pprint(table)
+    mapped_table = map_table(table)
+    pprint(mapped_table)
 
+    pos = (0, 0)
+    summ = table[0][0]
+    while pos != (WIDTH-1, HEIGHT-1):
+        _, goto = find_max(pos, mapped_table)
+        if goto == (None, None):
+            summ += table[-1][-1]
+            pos = (WIDTH-1, HEIGHT-1)
+            break
+        add = table[goto[1]][goto[0]]
+        summ += add
+        pos = goto
+    print(summ)
+
+
+if __name__ == "__main__":
+    main()
